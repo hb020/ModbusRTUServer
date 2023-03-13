@@ -113,6 +113,11 @@ void ModbusRTUServerClass::setRS485Pins(int tx_pin, int de_pin, int re_pin)
   modbus_set_rs485_pins(mb_, tx_pin, de_pin, re_pin);
 }
 
+void ModbusRTUServerClass::setDebug(bool flag)
+{
+  modbus_set_debug(mb_, flag);
+}
+
 int ModbusRTUServerClass::configureCoils(int start_address, int nb)
 {
   if (start_address < 0 || nb < 1)

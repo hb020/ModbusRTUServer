@@ -16,9 +16,12 @@
 #endif
 #include <assert.h>
 
-#ifndef DEBUG
-#define printf(...) {}
-#define fprintf(...) {}
+#ifdef DEBUG
+extern "C" {
+int debug_printf(const char *format, ...);
+}
+#else
+#define debug_printf(...)      //now defines a blank line
 #endif
 
 #include "modbus-private.h"
@@ -251,7 +254,7 @@ static int _modbus_rtu_receive(modbus_t *ctx, uint8_t *req)
         ctx_rtu->confirmation_to_ignore = FALSE;
         rc = 0;
         if (ctx->debug) {
-            printf("Confirmation to ignore\n");
+            debug_printf("Confirmation to ignore\n");
         }
     } else {
         rc = _modbus_receive_msg(ctx, req, MSG_INDICATION);
@@ -279,7 +282,7 @@ static int _modbus_rtu_pre_check_confirmation(modbus_t *ctx, const uint8_t *req,
      * request) */
     if (req[0] != rsp[0] && req[0] != MODBUS_BROADCAST_ADDRESS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "The responding slave %d isn't the requested slave %d\n",
                     rsp[0], req[0]);
         }
@@ -304,7 +307,7 @@ static int _modbus_rtu_check_integrity(modbus_t *ctx, uint8_t *msg,
      * CRC computing. */
     if (slave != ctx->slave && slave != MODBUS_BROADCAST_ADDRESS) {
         if (ctx->debug) {
-            printf("Request for slave %d ignored (not %d)\n", slave, ctx->slave);
+            debug_printf("Request for slave %d ignored (not %d)\n", slave, ctx->slave);
         }
         /* Following call to check_confirmation handles this error */
         return 0;
@@ -318,7 +321,7 @@ static int _modbus_rtu_check_integrity(modbus_t *ctx, uint8_t *msg,
         return msg_length;
     } else {
         if (ctx->debug) {
-            fprintf(stderr, "ERROR CRC received 0x%0X != CRC calculated 0x%0X\n",
+            debug_printf("ERROR CRC received 0x%0X != CRC calculated 0x%0X\n",
                     crc_received, crc_calculated);
         }
 

@@ -12,9 +12,12 @@
 
 #include <Arduino.h>
 
-#ifndef DEBUG
-#define printf(...) {}
-#define fprintf(...) {}
+#ifdef DEBUG
+int debug_printf(const char *format, ...);
+int debug_vprintf(const char *format, va_list);
+#else
+#define debug_printf(...)      //now defines a blank line
+#define debug_vprintf(...)     //now defines a blank line
 #endif
 
 #if defined(__AVR__)
@@ -123,11 +126,11 @@ const char *modbus_strerror(int errnum) {
 void _error_print(modbus_t *ctx, const char *context)
 {
     if (ctx->debug) {
-        fprintf(stderr, "ERROR %s", modbus_strerror(errno));
+        debug_printf("ERROR %s", modbus_strerror(errno));
         if (context != NULL) {
-            fprintf(stderr, ": %s\n", context);
+            debug_printf(": %s\n", context);
         } else {
-            fprintf(stderr, "\n");
+            debug_printf("\n");
         }
     }
 }
@@ -152,7 +155,7 @@ int modbus_flush(modbus_t *ctx)
     rc = ctx->backend->flush(ctx);
     if (rc != -1 && ctx->debug) {
         /* Not all backends are able to return the number of bytes flushed */
-        printf("Bytes flushed (%d)\n", rc);
+        debug_printf("Bytes flushed (%d)\n", rc);
     }
     return rc;
 }
@@ -204,8 +207,8 @@ static int send_msg(modbus_t *ctx, uint8_t *msg, int msg_length)
 
     if (ctx->debug) {
         for (i = 0; i < msg_length; i++)
-            printf("[%.2X]", msg[i]);
-        printf("\n");
+            debug_printf("[%.2X]", msg[i]);
+        debug_printf("\n");
     }
 
     /* In recovery mode, the write command will be issued until to be
@@ -381,9 +384,9 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
 
     if (ctx->debug) {
         if (msg_type == MSG_INDICATION) {
-            printf("Waiting for a indication...\n");
+            debug_printf("Waiting for a indication... ");
         } else {
-            printf("Waiting for a confirmation...\n");
+            debug_printf("Waiting for a confirmation... ");
         }
     }
 
@@ -446,7 +449,7 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
         if (ctx->debug) {
             int i;
             for (i=0; i < rc; i++)
-                printf("<%.2X>", msg[msg_length + i]);
+                debug_printf("<%.2X>", msg[msg_length + i]);
         }
 
         /* Sums bytes received */
@@ -494,7 +497,7 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
     }
 
     if (ctx->debug)
-        printf("\n");
+        debug_printf("\n");
 
     return ctx->backend->check_integrity(ctx, msg, msg_length);
 }
@@ -580,7 +583,7 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
         /* Check function code */
         if (function != req[offset]) {
             if (ctx->debug) {
-                fprintf(stderr,
+                debug_printf(
                         "Received function not corresponding to the request (0x%X != 0x%X)\n",
                         function, req[offset]);
             }
@@ -629,7 +632,7 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
             rc = rsp_nb_value;
         } else {
             if (ctx->debug) {
-                fprintf(stderr,
+                debug_printf(
                         "Quantity not corresponding to the request (%d != %d)\n",
                         rsp_nb_value, req_nb_value);
             }
@@ -644,7 +647,7 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
         }
     } else {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "Message length not corresponding to the computed length (%d != %d)\n",
                     rsp_length, rsp_length_computed);
         }
@@ -698,7 +701,7 @@ static int response_exception(modbus_t *ctx, sft_t *sft,
         va_list ap;
 
         va_start(ap, template);
-        vfprintf(stderr, template, ap);
+        debug_vprintf(template, ap);
         va_end(ap);
     }
 
@@ -941,7 +944,7 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
         break;
     case MODBUS_FC_READ_EXCEPTION_STATUS:
         if (ctx->debug) {
-            fprintf(stderr, "FIXME Not implemented\n");
+            debug_printf("FIXME Not implemented\n");
         }
         errno = ENOPROTOOPT;
         return -1;
@@ -1114,7 +1117,7 @@ int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest)
 
     if (nb > MODBUS_MAX_READ_BITS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Too many bits requested (%d > %d)\n",
                     nb, MODBUS_MAX_READ_BITS);
         }
@@ -1143,7 +1146,7 @@ int modbus_read_input_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest)
 
     if (nb > MODBUS_MAX_READ_BITS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Too many discrete inputs requested (%d > %d)\n",
                     nb, MODBUS_MAX_READ_BITS);
         }
@@ -1170,7 +1173,7 @@ static int read_registers(modbus_t *ctx, int function, int addr, int nb,
 
     if (nb > MODBUS_MAX_READ_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Too many registers requested (%d > %d)\n",
                     nb, MODBUS_MAX_READ_REGISTERS);
         }
@@ -1218,7 +1221,7 @@ int modbus_read_registers(modbus_t *ctx, int addr, int nb, uint16_t *dest)
 
     if (nb > MODBUS_MAX_READ_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Too many registers requested (%d > %d)\n",
                     nb, MODBUS_MAX_READ_REGISTERS);
         }
@@ -1243,7 +1246,7 @@ int modbus_read_input_registers(modbus_t *ctx, int addr, int nb,
     }
 
     if (nb > MODBUS_MAX_READ_REGISTERS) {
-        fprintf(stderr,
+        debug_printf(
                 "ERROR Too many input registers requested (%d > %d)\n",
                 nb, MODBUS_MAX_READ_REGISTERS);
         errno = EMBMDATA;
@@ -1327,7 +1330,7 @@ int modbus_write_bits(modbus_t *ctx, int addr, int nb, const uint8_t *src)
 
     if (nb > MODBUS_MAX_WRITE_BITS) {
         if (ctx->debug) {
-            fprintf(stderr, "ERROR Writing too many bits (%d > %d)\n",
+            debug_printf("ERROR Writing too many bits (%d > %d)\n",
                     nb, MODBUS_MAX_WRITE_BITS);
         }
         errno = EMBMDATA;
@@ -1388,7 +1391,7 @@ int modbus_write_registers(modbus_t *ctx, int addr, int nb, const uint16_t *src)
 
     if (nb > MODBUS_MAX_WRITE_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Trying to write to too many registers (%d > %d)\n",
                     nb, MODBUS_MAX_WRITE_REGISTERS);
         }
@@ -1480,7 +1483,7 @@ int modbus_write_and_read_registers(modbus_t *ctx,
 
     if (write_nb > MODBUS_MAX_WR_WRITE_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Too many registers to write (%d > %d)\n",
                     write_nb, MODBUS_MAX_WR_WRITE_REGISTERS);
         }
@@ -1490,7 +1493,7 @@ int modbus_write_and_read_registers(modbus_t *ctx,
 
     if (read_nb > MODBUS_MAX_WR_READ_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
+            debug_printf(
                     "ERROR Too many registers requested (%d > %d)\n",
                     read_nb, MODBUS_MAX_WR_READ_REGISTERS);
         }

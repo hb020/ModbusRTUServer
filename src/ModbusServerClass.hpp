@@ -41,6 +41,9 @@ public:
 
   void setRS485Pins(int tx_pin, int de_pin, int re_pin);
 
+  // if flag = true: print extra info via debug_print
+  void setDebug(bool flag);
+
   /**
    * Poll interface for requests
    * 
@@ -119,9 +122,14 @@ public:
    */
   int inputRegisterWrite(int address, uint16_t value);
 
+#ifndef DEBUG
 private:
+#endif
   RS485Class RS485_;
 
+#ifdef DEBUG
+private:
+#endif
   modbus_t *mb_;
   modbus_mapping_t mbMapping_;
 
