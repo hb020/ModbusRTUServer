@@ -253,9 +253,11 @@ static int _modbus_rtu_receive(modbus_t *ctx, uint8_t *req)
         /* Ignore errors and reset the flag */
         ctx_rtu->confirmation_to_ignore = FALSE;
         rc = 0;
+#ifdef DEBUG
         if (ctx->debug) {
             debug_printf("Confirmation to ignore\n");
         }
+#endif        
     } else {
         rc = _modbus_receive_msg(ctx, req, MSG_INDICATION);
         if (rc == 0) {
@@ -281,11 +283,13 @@ static int _modbus_rtu_pre_check_confirmation(modbus_t *ctx, const uint8_t *req,
     /* Check responding slave is the slave we requested (except for broacast
      * request) */
     if (req[0] != rsp[0] && req[0] != MODBUS_BROADCAST_ADDRESS) {
+#ifdef DEBUG
         if (ctx->debug) {
             debug_printf(
                     "The responding slave %d isn't the requested slave %d\n",
                     rsp[0], req[0]);
         }
+#endif        
         errno = EMBBADSLAVE;
         return -1;
     } else {
@@ -306,9 +310,11 @@ static int _modbus_rtu_check_integrity(modbus_t *ctx, uint8_t *msg,
     /* Filter on the Modbus unit identifier (slave) in RTU mode to avoid useless
      * CRC computing. */
     if (slave != ctx->slave && slave != MODBUS_BROADCAST_ADDRESS) {
+#ifdef DEBUG
         if (ctx->debug) {
             debug_printf("Request for slave %d ignored (not %d)\n", slave, ctx->slave);
         }
+#endif        
         /* Following call to check_confirmation handles this error */
         return 0;
     }
@@ -320,10 +326,12 @@ static int _modbus_rtu_check_integrity(modbus_t *ctx, uint8_t *msg,
     if (crc_calculated == crc_received) {
         return msg_length;
     } else {
+#ifdef DEBUG
         if (ctx->debug) {
             debug_printf("ERROR CRC received 0x%0X != CRC calculated 0x%0X\n",
                     crc_received, crc_calculated);
         }
+#endif
 
         if (ctx->error_recovery & MODBUS_ERROR_RECOVERY_PROTOCOL) {
             _modbus_rtu_flush(ctx);

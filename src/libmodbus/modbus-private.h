@@ -106,7 +106,9 @@ struct _modbus {
     int slave;
     /* Socket or file descriptor */
     int s;
+#ifdef DEBUG
     int debug;
+#endif
     int error_recovery;
     struct timeval response_timeout;
     struct timeval byte_timeout;
